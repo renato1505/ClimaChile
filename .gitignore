@@ -1,9 +1,30 @@
-__pycache__/
-*.pyc
-.env
+# Entornos y paquetes locales
 .venv/
-.vercel/
+venv/
+env/
+node_modules/
+# Caché y archivos generados
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+*.tmp
+*.bak
 staticfiles/
-
+# Credenciales y configuración local
+.env
 .env.*
 !.env.example
+.vercel/
+*.pem
+*.key
+# Archivos del editor y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
