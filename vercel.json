@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "django",
+  "functions": {
+    "climachile/wsgi.py": {
+      "maxDuration": 300,
+      "excludeFiles": "{.venv/**,scripts/**,tablero/tests.py,__pycache__/**}"
+    }
+  }
+}
