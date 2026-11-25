@@ -1,6 +1,11 @@
 # ClimaChile — Dashboard de datos meteorológicos
 
-Proyecto académico de Visualización de Datos · Evaluación N.º 3 · Primera iteración.
+Proyecto académico de Visualización de Datos · Evaluación N.º 3.
+
+- **Aplicación pública:** https://climachile.vercel.app/
+- **Vista de detalle:** https://climachile.vercel.app/detalle/
+- **Repositorio público:** https://github.com/renato1505/ClimaChile
+- **Estado:** producción publicada y validada sin credenciales el 24 de noviembre de 2026 (America/Santiago).
 
 ## 1. Tema
 
@@ -66,6 +71,7 @@ $env:DEBUG = "true"
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py test tablero
 .\.venv\Scripts\python.exe scripts/verify_live.py
+.\.venv\Scripts\python.exe scripts/verify_public.py https://climachile.vercel.app
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 ```
 
@@ -75,23 +81,52 @@ Las pruebas de errores no necesitan conexión: simulan timeout, desconexión, HT
 
 ## Despliegue en Vercel
 
-Configuración preparada para el soporte nativo de Django:
+Configuración utilizada en el despliegue de producción con soporte nativo de Django:
 
 - `.python-version`: Python 3.14.
+- `.vercelignore`: excluye credenciales, entornos, caché, pruebas y archivos generados del paquete enviado por CLI.
 - `vercel.json`: preset Django, entrada `climachile/wsgi.py` y duración máxima de 300 segundos para las consultas y gráficos. La duración efectiva depende del plan.
 - `WSGI_APPLICATION`: `climachile.wsgi.application`; detección mediante `manage.py`.
 - `STATIC_ROOT` y `STATIC_URL`: Vercel ejecuta `collectstatic` y sirve el CSS desde su CDN. No se necesitan rutas manuales `/api` ni WhiteNoise.
 - `MPLCONFIGDIR`: directorio temporal escribible; no se escriben imágenes en el sistema de archivos del despliegue.
 - En Vercel se fuerza `DEBUG=false`, HTTPS y cookies seguras. Falta de `DJANGO_SECRET_KEY` detiene el arranque con un error explícito.
 
-Pasos pendientes para publicar:
+### Publicación y actualización
 
-1. Subir el proyecto a un repositorio e importarlo en Vercel. Seleccionar como raíz la carpeta que contiene `manage.py` y preset **Django**; conservar instalación y build automáticos.
-2. Definir `DJANGO_SECRET_KEY` con un secreto aleatorio propio, `DEBUG=false` y `ALLOWED_HOSTS=.vercel.app` (añadir un dominio propio si corresponde), tanto para Preview como Production. `.env.example` documenta las variables; el programa no carga archivos `.env` automáticamente. No subir secretos.
-3. Desplegar y verificar `/`, `/detalle/`, `/static/tablero/site.css`, filtros, gráficos y registros de la función. Si se usa CLI, la documentación exige Vercel CLI 50.38.0 o posterior.
-4. Confirmar disponibilidad de Open-Meteo, duración y tamaño del paquete en el build Linux real. La caché en memoria puede desaparecer entre invocaciones.
+Se publicó mediante Vercel CLI en el proyecto `clima-chile/climachile`. El repositorio GitHub es público y su rama es `main`. El despliegue actual se realizó por CLI: no se configuró el despliegue automático mediante GitHub.
 
-La aplicación no usa base de datos ni requiere migraciones. No se ha publicado ni se afirma disponer de una URL pública validada. Las pruebas locales no sustituyen la comprobación del despliegue real ni la revisión visual en un navegador.
+En Vercel están definidas `DJANGO_SECRET_KEY`, `DEBUG=false` y `ALLOWED_HOSTS=.vercel.app` para Production y Preview. El secreto se generó en memoria y se almacenó en Vercel, nunca en el repositorio. `.env.example` documenta las variables; el programa no carga archivos `.env` automáticamente. No se deben versionar los archivos locales que genere Vercel CLI.
+
+Para publicar cambios desde la carpeta del proyecto:
+
+```powershell
+git add <archivos-revisados>
+git commit -m "Descripción del cambio"
+git push origin main
+npx.cmd --yes vercel@latest login
+npx.cmd --yes vercel@latest link --yes --project climachile --scope clima-chile
+npx.cmd --yes vercel@latest deploy --prod --yes --scope clima-chile
+```
+
+La autenticación y vinculación solo son necesarias si no existe una sesión/proyecto local. No hace falta iniciar sesión nuevamente en cada publicación. La documentación exige Vercel CLI 50.38.0 o posterior; la publicación se realizó con la versión 66.6.0.
+
+### Resultado de la validación de entrega
+
+Validación del 24 de noviembre de 2026:
+
+- GitHub y README accesibles sin autenticación; `main` sincronizada.
+- Build Linux exitoso con Python 3.14 y Django 5.2.19; función Django de 68,33 MB, según la inspección del primer despliegue.
+- `collectstatic` exitoso y `/static/tablero/site.css` accesible por HTTPS.
+- Estado de producción **Ready**, dominio `https://climachile.vercel.app/`.
+- 36 combinaciones públicas correctas: dos vistas × seis opciones de ciudad × tres períodos. Verificación mediante solicitudes HTTP sin tokens, cookies ni bypass de protección.
+- 90 imágenes PNG válidas entre esas páginas. Los cinco tipos de gráfico están disponibles: dos en la vista general y tres en detalle.
+- Tres KPI y sus períodos anteriores contrastados con consultas independientes reales a Open-Meteo, con tolerancia de 0,05 por el redondeo a un decimal.
+- Cinco pruebas locales de manejo de fallos superadas: timeout, desconexión, HTTP fallido, JSON inválido, series faltantes y fechas/filtros inválidos.
+- Diseño y CSS conservados; no se añadieron datos ficticios ni funcionalidades al tablero.
+
+La comprobación pública reproducible está en `scripts/verify_public.py`. Esa prueba requiere que Vercel y Open-Meteo estén disponibles y puede tardar varios minutos. No modifica la aplicación desplegada. La revisión visual completa en navegador no forma parte de estas pruebas HTTP; se inspeccionaron imágenes de los gráficos durante la revisión local.
+
+La aplicación no usa base de datos ni requiere migraciones. La caché en memoria puede desaparecer entre invocaciones y la disponibilidad futura depende de Vercel y Open-Meteo. No quedan tareas técnicas bloqueantes para la entrega; la integración de despliegue automático con GitHub es opcional.
 
 Fuentes de configuración: [Django en Vercel](https://vercel.com/docs/frameworks/full-stack/django), [runtime Python](https://vercel.com/docs/functions/runtimes/python) y [API histórica Open-Meteo](https://open-meteo.com/en/docs/historical-weather-api).
 
